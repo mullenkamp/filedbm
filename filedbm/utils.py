@@ -16,7 +16,7 @@ import mmap
 ### Parameters
 
 key_hash_len = 13
-write_buffer_size = 512000
+default_write_buffer_size = 512000
 
 
 ############################################
@@ -176,14 +176,18 @@ def write_data_block(db_path, key, value, n_bytes_key, n_bytes_value):
     file = io.open(file_path, 'w+b')
     _ = file.write(write_init_bytes)
 
-    chunk = value.read(write_buffer_size)
+    if hasattr(value, '_buffer_size'):
+        buffer_size = value._buffer_size
+    else:
+        buffer_size = default_write_buffer_size
+
+    chunk = value.read(buffer_size)
     while chunk:
         file.write(chunk)
-        chunk = value.read(write_buffer_size)
+        chunk = value.read(buffer_size)
 
     file.close()
 
-    # return file_path
 
 
 

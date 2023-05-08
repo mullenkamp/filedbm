@@ -9,7 +9,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # General parameters
 name = 'filedbm'
 main_package = 'filedbm'
-version = '0.0.1'
+version = '0.0.2'
 descrip = 'A persistent key-value database'
 
 # The below code is for readthedocs. To have sphinx/readthedocs interact with
