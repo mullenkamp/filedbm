@@ -7,7 +7,7 @@
 import io
 import pathlib
 from collections.abc import Mapping, MutableMapping
-from typing import Any, Generic, Iterator, Union, Dict
+from typing import Any, Generic, Iterator, Union, Dict, List
 import shutil
 # from hashlib import blake2b
 
@@ -23,7 +23,7 @@ class FileDBM(MutableMapping):
     """
 
     """
-    def __init__(self, db_path: str, flag: str = "r", n_bytes_key=2, n_bytes_value=4):
+    def __init__(self, db_path: str, flag: str = "r", buffer_size: int=512000, n_bytes_key=2, n_bytes_value=4):
         """
 
         """
@@ -49,6 +49,7 @@ class FileDBM(MutableMapping):
             raise ValueError("Invalid flag")
 
         self._write = write
+        self._buffer_size = buffer_size
         self._n_bytes_key = n_bytes_key
         self._n_bytes_value = n_bytes_value
 
@@ -63,13 +64,23 @@ class FileDBM(MutableMapping):
         for key in utils.iter_keys_values(self.db_path, True, False, self._n_bytes_key, self._n_bytes_value):
             yield key
 
-    def items(self):
-        for key, value in utils.iter_keys_values(self.db_path, True, True, self._n_bytes_key, self._n_bytes_value):
-            yield key, value
+    def items(self, keys: List[str]=None):
+        if keys is None:
+            for key, value in utils.iter_keys_values(self.db_path, True, True, self._n_bytes_key, self._n_bytes_value):
+                yield key, value
+        else:
+            for key in keys:
+                value = utils.get_value(self.db_path, key.encode(), self._n_bytes_key, self._n_bytes_value)
+                yield key, value
 
-    def values(self):
-        for value in utils.iter_keys_values(self.db_path, False, True, self._n_bytes_key, self._n_bytes_value):
-            yield value
+    def values(self, keys: List[str]=None):
+        if keys is None:
+            for value in utils.iter_keys_values(self.db_path, False, True, self._n_bytes_key, self._n_bytes_value):
+                yield value
+        else:
+            for key in keys:
+                value = utils.get_value(self.db_path, key.encode(), self._n_bytes_key, self._n_bytes_value)
+                yield value
 
     def __iter__(self):
         return self.keys()
@@ -112,7 +123,7 @@ class FileDBM(MutableMapping):
 
     def __setitem__(self, key: str, value: Union[bytes, io.IOBase]):
         if self._write:
-            utils.write_data_block(self.db_path, key.encode(), value, self._n_bytes_key, self._n_bytes_value)
+            utils.write_data_block(self.db_path, key.encode(), value, self._n_bytes_key, self._n_bytes_value, self._buffer_size)
         else:
             raise ValueError('File is open for read only.')
 
@@ -161,7 +172,7 @@ class FileDBM(MutableMapping):
 
 
 def open(
-    db_path: str, flag: str = "r", n_bytes_key=2, n_bytes_value=4):
+    db_path: str, flag: str = "r", buffer_size: int=512000, n_bytes_key=2, n_bytes_value=4):
     """
     Open a persistent dictionary for reading and writing. All keys and values are stored in individual files within the db_path. Keys must be strings and values must be either bytes or file-objects.
 
@@ -172,6 +183,9 @@ def open(
 
     flag : str
         Flag associated with how the file is opened according to the dbm style. See below for details.
+
+    buffer_size : int
+        The buffer memory size used for reading and writing. Defaults to 512000.
 
     n_bytes_key : int
         The number of bytes to represent an integer of the max length of each key.
@@ -201,4 +215,4 @@ def open(
     |         | for reading and writing                   |
     +---------+-------------------------------------------+
     """
-    return FileDBM(db_path, flag, n_bytes_key, n_bytes_value)
+    return FileDBM(db_path, flag, buffer_size, n_bytes_key, n_bytes_value)

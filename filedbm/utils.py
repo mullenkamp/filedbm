@@ -16,7 +16,6 @@ import mmap
 ### Parameters
 
 key_hash_len = 13
-default_write_buffer_size = 512000
 
 
 ############################################
@@ -157,7 +156,7 @@ def iter_keys_values(db_path, key=False, value=False, n_bytes_key=2, n_bytes_val
         yield get_data_block(mm, key, value, n_bytes_key, n_bytes_value)
 
 
-def write_data_block(db_path, key, value, n_bytes_key, n_bytes_value):
+def write_data_block(db_path, key, value, n_bytes_key, n_bytes_value, buffer_size):
     """
 
     """
@@ -178,8 +177,6 @@ def write_data_block(db_path, key, value, n_bytes_key, n_bytes_value):
 
     if hasattr(value, '_buffer_size'):
         buffer_size = value._buffer_size
-    else:
-        buffer_size = default_write_buffer_size
 
     chunk = value.read(buffer_size)
     while chunk:
