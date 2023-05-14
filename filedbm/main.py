@@ -32,13 +32,14 @@ class FileDBM(MutableMapping):
         fp_exists = fp.exists()
 
         if flag == "r":  # Open existing database for reading only (default)
+            if not fp_exists:
+                raise FileNotFoundError(db_path + ' not found.')
             write = False
-            if not fp_exists:
-                raise FileNotFoundError(db_path + ' not found.')
+            ttl = None
         elif flag == "w":  # Open existing database for reading and writing
-            write = True
             if not fp_exists:
                 raise FileNotFoundError(db_path + ' not found.')
+            write = True
         elif flag == "c":  # Open database for reading and writing, creating it if it doesn't exist
             write = True
         elif flag == "n":  # Always create a new, empty database, open for reading and writing
@@ -214,7 +215,7 @@ def open(
         The number of bytes to represent an integer of the max length of each value.
 
     ttl : int or None
-        Give the database a Time To Live (ttl) lifetime in seconds. All objects will persist in the database for at least this length. The objects will be removed when any query is performed on the database. The default None will not assign a ttl. The ttl will only be changed if the flag parameter is set to anything but "r".
+        Give the database a Time To Live (ttl) lifetime in seconds. All objects will persist in the database for at least this length. The objects will be removed when any query is performed on the database. The default None will not assign a ttl. The ttl will only be used if the flag parameter is set to anything but "r".
 
     Returns
     -------
