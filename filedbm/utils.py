@@ -11,6 +11,7 @@ from hashlib import blake2b, blake2s
 # from time import time
 from typing import Any, Generic, Iterator, Union
 import mmap
+from time import time
 
 ############################################
 ### Parameters
@@ -75,7 +76,7 @@ def hash_key(key):
     """
 
     """
-    return blake2s(key, digest_size=key_hash_len).digest()
+    return blake2s(key, digest_size=key_hash_len).digest().hex()
 
 
 def determine_obj_size(file_obj):
@@ -123,14 +124,19 @@ def get_data_block(mm, key, value, n_bytes_key, n_bytes_value):
         raise ValueError('One or both key and value must be True.')
 
 
-def get_value(db_path, key, n_bytes_key, n_bytes_value):
+def get_value(db_path, key, n_bytes_key, n_bytes_value, ttl=None):
     """
 
     """
     key_bytes_len = len(key)
     key_hash = hash_key(key)
-    file_path = db_path.joinpath(key_hash.hex())
+    file_path = db_path.joinpath(key_hash)
     if file_path.exists():
+        if ttl is not None:
+            if (time() - os.path.getmtime(file_path)) > ttl:
+                file_path.unlink()
+                return None
+
         file = io.open(file_path, 'rb')
         mm = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
 
@@ -139,17 +145,21 @@ def get_value(db_path, key, n_bytes_key, n_bytes_value):
         value_pos = n_bytes_key + n_bytes_value + key_bytes_len
 
         out = FileObjectSlice(mm, value_pos, file_len - value_pos)
+
+        return out
     else:
-        out = None
-
-    return out
+        return None
 
 
-def iter_keys_values(db_path, key=False, value=False, n_bytes_key=2, n_bytes_value=4):
+def iter_keys_values(db_path, key=False, value=False, n_bytes_key=2, n_bytes_value=4, ttl=None):
     """
 
     """
     for file_path in db_path.iterdir():
+        if ttl is not None:
+            if (time() - os.path.getmtime(file_path)) > ttl:
+                file_path.unlink()
+                continue
         file = io.open(file_path, 'rb')
         mm = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
 
@@ -170,7 +180,7 @@ def write_data_block(db_path, key, value, n_bytes_key, n_bytes_value, buffer_siz
 
     write_init_bytes = int_to_bytes(key_bytes_len, n_bytes_key) + int_to_bytes(value_bytes_len, n_bytes_value) + key
 
-    file_path = db_path.joinpath(key_hash.hex())
+    file_path = db_path.joinpath(key_hash)
 
     file = io.open(file_path, 'w+b')
     _ = file.write(write_init_bytes)
