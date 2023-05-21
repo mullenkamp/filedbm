@@ -180,16 +180,6 @@ class FileDBM(MutableMapping):
     # def __del__(self):
     #     self.close()
 
-    # def sync(self):
-    #     if self._write:
-    #         if self._buffer_index:
-    #             utils.flush_write_buffer(self._mm, self._write_buffer)
-    #             self._sync_index()
-    #         self._mm.seek(n_keys_pos)
-    #         self._mm.write(utils.int_to_bytes(self._n_keys, 4))
-    #         self._mm.flush()
-    #         self._file.flush()
-
 
 
 def open(
